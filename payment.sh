@@ -34,10 +34,10 @@ VALIDATE(){
     fi
 }
 
-dnf install python3 gcc python3-devel -y
+dnf install python3 gcc python3-devel -y &>>$LOGS_FOLDER
 VALIDATE $? "Install Python3 packages"
 
-id roboshop
+id roboshop &>>$LOGS_FOLDER
 if [ $? -ne 0 ]
 then
     useradd --system --home /app --shell /sbin/nologin --comment "roboshop system user" roboshop &>>$LOG_FILE
@@ -57,7 +57,22 @@ cd /app
 unzip /tmp/payment.zip &>>$LOG_FILE
 VALIDATE $? "unzipping payment"
 
-pip3 install -r requirements.txt
+pip3 install -r requirements.txt &>>$LOGS_FOLDER
 VALIDATE $? "Installing dependencies"
 
-cp $SCRIPT_DIR/payment.service /etc/systemd/system/payment.service
+cp $SCRIPT_DIR/payment.service /etc/systemd/system/payment.service &>>$LOGS_FOLDER
+VALIDATE $? "Copying payment service"
+
+systemctl daemon-reload &>>$LOGS_FOLDER
+VALIDATE $? "Daemon Reload"
+
+systemctl enable payment &>>$LOGS_FOLDER
+VALIDATE $? "Enable payment"
+
+systemctl start payment &>>$LOGS_FOLDER
+VALIDATE $? "Starting payment"
+
+END_TIME=$(date +%s)
+TOTAL_TIME=$(( $END_TIME - $START_TIME ))
+
+echo -e "Script exection completed successfully, $Y time taken: $TOTAL_TIME seconds $N" | tee -a $LOG_FILE
